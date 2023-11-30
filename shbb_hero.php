@@ -4,7 +4,7 @@
 * Plugin Name: Shbb Hero
 * Plugin URI: https://alextheme.github.io
 * Description: Add Shortcode hero block to theme
-* Version: 0.0.2
+* Version: 0.1.0
 * Author: Oleksandr Borymskyi
 * Author URI: https://alextheme.github.io
 * Text Domain: shbbhero
@@ -18,7 +18,7 @@ if ( ! defined( 'SHBB_PLUGIN_PATH' ) ) {
     define( 'SHBB_PLUGIN_PATH', dirname(__FILE__) );
 }
 if ( ! defined( 'SHBB_PLUGIN_VERSION' ) ) {
-    define( 'SHBB_PLUGIN_VERSION', '0.0.2' );
+    define( 'SHBB_PLUGIN_VERSION', '0.1.0' );
 }
 
 class ShbbHero {
@@ -37,127 +37,73 @@ class ShbbHero {
         add_shortcode('shbb_hero',[$this,'hero_shortcode']);
     }
 
-    public function hero_shortcode($atts = array()){
+    public function hero_shortcode($atts = array()) {
 
         extract(shortcode_atts(array(
-            'title' => 'Unser Mix aus,Innovation,und Kreativität',
-            'title_accent' => 2,
-            'cell_radius' => 0,
-            'subtitle' => 'brumm digital Projekte',
+            'rx' => 0, // 0px
+            'gap' => 2.45, // 2.45%
             'links' => 'Branding(http://localhost),WebDesign(http://localhost),Programmierung(#),SEO & SEA(#)',
+            'bg' => '6161,6125,5806,5976,5802', // ids images gallery
+            'ratio' => '77,93,93', // PC, Tablet, Mobile %
+            'h_middle' => 22.3, // 22.3%
+            'h_top_el' => '60, 53, 45, 70',
+            'h_random' => false,
         ), $atts));
 
-        /**
-         * Heading
-         * title="Unser Mix aus,Innovation,und Kreativität"
-         * title_accent="3"
-         * subtitle="brumm digital Projekte"
-         */
-        $title_arr = explode(',', $title);
-        $heading = '<h1 class="hero_title">';
-        for ($k = 0; $k < count($title_arr); $k++) {
+        $uniqueId = uniqid();
+        $anchor_list = explode(',', $links);
+        $count_col = count($anchor_list);
 
-            if ($k !== 0) $heading .= '<br>';
+        $bg_ids = array_map('trim', explode(',', $bg));
+        $bg_ids = array_pad($bg_ids, count($anchor_list), $bg_ids[0]);
 
-            if ($title_accent == $k + 1) {
-                $heading .= '<span class="accent">'.$title_arr[$k].'</span>';
-            } else {
-                $heading .= '<span>'.$title_arr[$k].'</span>';
-            }
+        $radius_mask = is_int((int) $rx) ? abs((int) $rx) : 0;
+        $gap = is_int((int) $gap) ? abs((int) $gap) : 0; // 2.45%
+        $width_item = (100 - ($count_col - 1) * $gap) / $count_col;
+        $h_middle = is_int((int) $h_middle) ? abs((int) $h_middle) : 0;
 
-        }
-        $heading .= '</h1><span class="hero_subtitle">'. $subtitle .'</span>';
-
-
-        /**
-         * Brand List
-         * image in folder - assets/img/brand/
-         */
-        $img_dir = SHBB_PLUGIN_PATH.'/assets/img/';
-        $brand_images = glob($img_dir . 'brand/*.{jpg,jpeg,png}', GLOB_BRACE);
-
-        $brands_list = '<ul class="hero__brands">';
-        foreach ($brand_images as $img) {
-            $brands_list .= '<li class="hero__brand"><div class="hero__brand_img_w"><img class="hero__brand_img" src="';
-            $brands_list .= plugins_url('/shbb_hero/assets/img/brand/') . basename($img);
-            $brands_list .= '" alt=""></div></li>';
-        }
-        $brands_list .= '</ul>';
-
-
-        /**
-         * Mask SVG
-         * cell_radius="0"
-         */
-        $uniq_id = uniqid('');
-
-        $count_row_mask = 3;
-        $count_col_mask = 4;
-        $cell_radius = empty($cell_radius) ? 0 : abs((int) $cell_radius);
-        if ($cell_radius === 0) {
-            $svg_mask_cell = str_repeat('<rect x="0" y="0" width="0" height="0"/>', $count_row_mask * $count_col_mask);
+        if ($h_random) {
+            $h_top_elements = range(30, 70);
+            shuffle($h_top_elements );
+            $h_top_elements = array_slice($h_top_elements ,0,$count_col);
         } else {
-            $svg_mask_cell = str_repeat(str_repeat('<circle cx="0" cy="0" r="0"/>', 4) . str_repeat('<rect x="0" y="0" width="0" height="0"/>', 2), $count_row_mask * $count_col_mask);
+            $h_top_elements = array_map('trim', explode(',', $h_top_el));
+            $h_top_elements = array_pad($h_top_elements, $count_col, rand(0, 100));
         }
-        $svg_mask = '<mask id="mask_'. $uniq_id .'">' . $svg_mask_cell . '</mask>';
+        $h_top_elements = implode(',', $h_top_elements);
 
-
-        /**
-         * SVG background image
-         * image in folder - assets/img/bg/
-         * 0 - PC, 1 - Tablet, 3 - Mobile
-         */
-        $bg_images = glob($img_dir . 'bg/*.{jpg,jpeg,png}', GLOB_BRACE);
-
-        $svg_bg_img = '<image xmlns:xlink="http://www.w3.org/1999/xlink" id="svg_img_bg_'.$uniq_id.'" xlink:href="" ';
-        for ($j = 0; $j < count($bg_images); $j++) {
-            $img_url = plugins_url('/shbb_hero/assets/img/bg/') . basename($bg_images[$j]);
-            $data_img = getimagesize(SHBB_PLUGIN_PATH.'/assets/img/bg/'.basename( $bg_images[$j] ));
-
-            $svg_bg_img .= 'data-img_href_'.$j.'="'.$img_url.'" ';
-            $svg_bg_img .= 'data-img_size_'.$j.'="'.$data_img[0].','.$data_img[1].'"';
-        }
-
-        $svg_bg_img .= 'mask="url(#mask_'. $uniq_id .')" width="816px" height="628px" ></image>';
-
-        $svg = '<svg id="svg_anim_block_'.$uniq_id.'" class="svg_anim_block" data-cell_radius="'.$cell_radius.'">';
-        $svg .= '<style>#mask_'.$uniq_id.' circle, #svgmask1 polygon, #mask_'.$uniq_id.' rect {fill: #fff}</style>';
-        $svg .= $svg_mask . $svg_bg_img . '</svg>';
-
+        $data_params = ' data-gap="'. $gap .'" data-radius="'. $radius_mask .'" data-h_middle="'. $h_middle .'" data-h_top_elements="'. $h_top_elements .'" data-ratio="'. $ratio .'" ';
 
         /**
          * Links
          * links="Бренди(http://localhost),Веб Дизайн(http://localhost),Програмування(#),SEO & SEA(#)"
          */
-        $anchor_list = explode(',', $links);
-        $anchors = '<ul class="hero__anim_block_list_links">';
-        foreach ($anchor_list as $anchor_srt) {
-            $anchor_arr = explode('(', $anchor_srt);
-            $anchors .= '<li class="hero__anim_block_item_link">';
-            $anchors .= '<a class="hero__anim_block_link" href="'. str_replace(")", "", $anchor_arr[1]) .'">'. $anchor_arr[0] .'</a></li>';
+        $output = '<ul class="listblock__list" style="grid-template-columns: repeat('. $count_col .', '. $width_item .'%); gap:0 '. $gap .'%">';
+        foreach ($anchor_list as $key => $anchor_srt) {
+            $anchor = explode('(', $anchor_srt);
+            $bg_url = wp_get_attachment_image_src( $bg_ids[$key], "attached-image");
+            $clip_path_id = 'clipPath_'. $uniqueId .'-'. $key;
+
+            $output .= '<li class="listblock__item" >';
+            $output .= '<svg height="0" width="0"><defs><clipPath id="'. $clip_path_id .'">
+                <rect x="0" y="0"   width="100" height="100" rx="'.$radius_mask.'"/>
+                <rect x="0" y="120" width="100" height="100" rx="'.$radius_mask.'"/>
+                <rect x="0" y="240" width="100" height="100" rx="'.$radius_mask.'"/>
+            </clipPath></defs></svg>';
+            $output .= is_array($bg_url) ? '<img class="listblock__item_img" style="clip-path: url(#'. $clip_path_id .')" src="'. esc_url($bg_url[0]) .'" alt="" />' : '';
+            $output .= '<a class="listblock__link" style="border-radius:'.$radius_mask.'px" href="'. str_replace(")", "", $anchor[1]) .'">'. $anchor[0] .'</a>';
+
+            $output .= '</li>';
         }
-        $anchors .= '</ul>';
+        $output .= '</ul>';
+
 
         /**
          * output
          */
-        $output = '<div class="shbb_hero hero">
-            <div class="wrapper">
-                <div class="hero__row">
-        
-                    <div class="hero__col">
-                        <div class="hero__heading">'.$heading.'</div>
-                        <div class="hero__brands_w">'.$brands_list.'</div>
-                    </div>
-        
-                    <div class="hero__col">
-                        <div class="hero__anim_block">
-                            <div class="hero__svg_wrap">'.$svg . $anchors .'</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>';
+        $output = '<div class="shbb listblock" id="listblock_'. $uniqueId .'" '. $data_params .'>
+            <div class="listblock__wrapper">'. $output .'</div></div>';
+
 
         return $output;
     }
